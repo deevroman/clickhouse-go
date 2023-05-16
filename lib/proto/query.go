@@ -23,6 +23,7 @@ import (
 	chproto "github.com/ClickHouse/ch-go/proto"
 	"go.opentelemetry.io/otel/trace"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -240,9 +241,39 @@ func (s *Parameter) encode(buffer *chproto.Buffer, revision uint64) error {
 // currently, only string type is supported
 func encodeFieldDump(value any) (string, error) {
 	switch v := value.(type) {
+	case nil:
+		return "NULL", nil
+	case int:
+		return fmt.Sprintf("Int%d_%d", strconv.IntSize, v), nil
+	case int8:
+		return fmt.Sprintf("Int8_%d", v), nil
+	case int16:
+		return fmt.Sprintf("Int16_%d", v), nil
+	case int32:
+		return fmt.Sprintf("Int32_%d", v), nil
+	case int64:
+		return fmt.Sprintf("Int64_%d", v), nil
+	case uint:
+		return fmt.Sprintf("UInt%d_%d", strconv.IntSize, v), nil
+	case uint8:
+		return fmt.Sprintf("UInt8_%d", v), nil
+	case uint16:
+		return fmt.Sprintf("UInt16_%d", v), nil
+	case uint32:
+		return fmt.Sprintf("UInt32_%d", v), nil
+	case uint64:
+		return fmt.Sprintf("UInt64_%d", v), nil
+	case float32:
+		return fmt.Sprintf("Float32_%f", v), nil
+	case float64:
+		return fmt.Sprintf("Float64_%f", v), nil
+	case bool:
+		return fmt.Sprintf("Bool_%t", v), nil
 	case string:
-		return fmt.Sprintf("'%v'", strings.ReplaceAll(v, "'", "\\'")), nil
+		// Escape any single quotes in the string
+		escaped := strings.ReplaceAll(v, "'", "\\'")
+		return fmt.Sprintf("'%s'", escaped), nil
+	default:
+		return "", fmt.Errorf("unsupported type: %T", v)
 	}
-
-	return "", fmt.Errorf("unsupported field type %T", value)
 }
